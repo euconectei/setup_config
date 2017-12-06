@@ -3,15 +3,15 @@
 brew -v
 
 if [ $? -eq 0 ]; then
-    echo "linuxbrew já instalado!"
+    echo "Linuxbrew já instalado!"
 else
-    echo "Install linuxbrew"
+    echo "Install Linuxbrew"
     sudo apt-get install build-essential curl file git python-setuptools
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
     echo "export PATH='$(brew --prefix)/bin:$(brew --prefix)/sbin'":'"$PATH"' >>~/.bashrc
 fi
-echo "Verify if Homebrew is ok"
+echo "Verify if Linuxbrew is ok"
 brew doctor
 
-echo "Update Homebrew"
+echo "Update Linuxbrew"
 brew update

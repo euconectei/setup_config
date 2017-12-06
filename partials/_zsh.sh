@@ -1,6 +1,6 @@
 #!/bin/bash
 
-zsh -v
+zsh --version
 
 if [ $? -eq 0 ]; then
     echo "ZSH already installed!"
