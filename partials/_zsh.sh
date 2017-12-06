@@ -8,3 +8,5 @@ else
     echo "Installing ZSH"
     brew install zsh zsh-completions
 fi
+
+chsh -s $(which zsh)
