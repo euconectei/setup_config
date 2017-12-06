@@ -9,4 +9,5 @@ else
     brew install zsh zsh-completions
 fi
 
-chsh -s $(which zsh)
+command -v zsh | sudo tee -a /etc/shells
+sudo chsh -s "$(command -v zsh)" "${USER}"
