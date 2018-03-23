@@ -9,7 +9,7 @@ if [ "$(uname)" == 'Darwin' ]; then
   sw=('xcode' 'homebrew' 'editor' ${sw[@]})
 elif [ "$(expr substr $(uname -s) 1 5)" == 'Linux' ]; then
   OS='Linux'
-  sw=('ruby' 'linuxbrew' 'vscode' ${sw[@]})
+  sw=('ruby' 'linuxbrew' ${sw[@]})
 else
   echo "Your platform ($(uname -a)) is not supported."
   exit 1
