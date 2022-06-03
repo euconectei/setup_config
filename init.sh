@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Select the configs 
-sw=('git' 'zsh' 'oh-my-zsh' 'node' 'mongodb')
+sw=('git' 'zsh' 'oh-my-zsh' 'node')
 
 # Verify your O.S.
 if [ "$(uname)" == 'Darwin' ]; then
