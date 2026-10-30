@@ -1,4 +1,7 @@
-#!/bin/bash 
+#!/bin/bash
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 
-echo "Configure EDITOR"
-echo "Depois de instalar o Atom utilizar o comando: export EDITOR='code -nw'"
+if is_installed code; then EDITOR_CMD="code --wait"; else EDITOR_CMD="nano"; fi
+step "Configurando EDITOR=$EDITOR_CMD"
+write_zshrc "export EDITOR='$EDITOR_CMD'"
+git config --global core.editor "$EDITOR_CMD"

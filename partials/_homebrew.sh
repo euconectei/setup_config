@@ -1,14 +1,12 @@
-#!/bin/bash 
+#!/bin/bash
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 
-brew -v
-if [ $? -eq 0 ]; then
-    echo "Homebrew already installed!"
+[[ "$OS" == mac ]] || { warn "homebrew e so macOS"; exit 0; }
+if is_installed brew; then
+  info "Homebrew ja instalado"
 else
-    echo "Installing Homebrew"
-    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+  step "Instalando Homebrew"
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
-echo "Verify if Homebrew is ok"
-brew doctor
-
-echo "Update Homebrew"
+step "Atualizando Homebrew"
 brew update

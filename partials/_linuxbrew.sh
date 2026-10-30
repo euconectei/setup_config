@@ -1,17 +1,16 @@
-#!/bin/bash 
+#!/bin/bash
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 
-brew -v
-
-if [ $? -eq 0 ]; then
-    echo "Linuxbrew já instalado!"
+[[ "$OS" == linux ]] || { warn "linuxbrew e so Linux"; exit 0; }
+if is_installed brew; then
+  info "Homebrew ja instalado"
 else
-    echo "Install Linuxbrew"
-    sudo apt-get install build-essential curl file git python-setuptools
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
-    echo "export PATH='/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin'":'"$PATH"' >> ~/.bashrc
+  step "Instalando Homebrew (Linux)"
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
-echo "Verify if Linuxbrew is ok"
-brew doctor
-
-echo "Update Linuxbrew"
+if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  write_zshrc 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
+step "Atualizando Homebrew"
 brew update

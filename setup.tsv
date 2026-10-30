@@ -1,0 +1,33 @@
+# id          os      tier      group       descricao
+xcode         mac     core      base        Xcode Command Line Tools
+homebrew      mac     core      base        Homebrew
+linuxbrew     linux   core      base        Homebrew (Linux)
+git           both    core      shell       Git
+zsh           both    core      shell       Zsh + zsh-completions
+oh-my-zsh     both    core      shell       Oh My Zsh + plugins
+editor        both    core      shell       $EDITOR + git core.editor
+node          both    core      runtime     Node via fnm + LTS
+pnpm          both    core      runtime     pnpm
+ruby          both    core      runtime     Ruby via rbenv
+python        both    core      runtime     Python (ultima estavel)
+claude        both    core      clis        Claude Code
+opencode      both    core      clis        opencode
+rtk           both    core      clis        rtk
+gh            both    core      cloud       GitHub CLI
+docker        both    core      containers  Docker
+reactNative   both    core      ios         React Native deps
+vscode        both    optional  apps        Visual Studio Code
+fonts         both    optional  apps        Fira Code
+supabase      both    optional  cloud       Supabase CLI
+aws           both    optional  cloud       AWS CLI
+firebase      both    optional  cloud       Firebase CLI
+wrangler      both    optional  cloud       Wrangler (Cloudflare)
+bitbucket     both    optional  cloud       Atlassian CLI
+horusec       both    optional  utils       Horusec
+poetry        both    optional  utils       Poetry
+ripgrep       both    optional  utils       ripgrep
+jq            both    optional  utils       jq
+ghostty       mac     optional  apps        Ghostty terminal
+obsidian      mac     optional  apps        Obsidian
+axe           mac     optional  ios         AXe (iOS Simulator automation)
+mole          mac     optional  utils       Mole (cleanup)

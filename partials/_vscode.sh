@@ -1,17 +1,14 @@
 #!/bin/bash
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 
-code -v
-
-if [ $? -eq 0 ]; then
-  echo "VSCode already installed!"
+if is_installed code; then info "VS Code ja instalado"; exit 0; fi
+if [[ "$OS" == mac ]]; then
+  step "Instalando VS Code (cask)"
+  brew install --cask visual-studio-code
 else
-  echo "Installing VSCode"
-  curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-  sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
-  sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
+  step "Instalando VS Code (apt)"
+  curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /usr/share/keyrings/microsoft.gpg >/dev/null
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list >/dev/null
   sudo apt-get update
-  sudo apt-get install code # or code-insiders
-
-  export EDITOR='code -nw'
+  sudo apt-get install -y code
 fi
-
