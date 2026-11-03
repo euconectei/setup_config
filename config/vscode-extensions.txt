@@ -1,0 +1,28 @@
+# Extensoes do VS Code instaladas pelo "setup --only vscode-ext".
+# Removidas de proposito (ja nativas no VS Code ou pesadas):
+#   auto-rename-tag, highlight-matching-tag, autoimport, path-intellisense, webpack,
+#   codemetrics, import-cost, orta.vscode-jest (fica o jest-runner), copilot-chat, quokka, wallaby
+# SonarLint: instalado, mas deixe DESABILITADO globalmente e habilite por projeto
+#   (Extensoes > SonarQube for IDE > Desabilitar; no projeto: Habilitar (Workspace)).
+adpyke.codesnap
+anthropic.claude-code
+beatzoid.http-status-codes
+bradlc.vscode-tailwindcss
+chakrounanas.turbo-console-log
+davidanson.vscode-markdownlint
+dbaeumer.vscode-eslint
+dotjoshjohnson.xml
+dracula-theme.theme-dracula
+dsznajder.es7-react-js-snippets
+eamodio.gitlens
+editorconfig.editorconfig
+esbenp.prettier-vscode
+firsttris.vscode-jest-runner
+gruntfuggly.todo-tree
+mikestead.dotenv
+msjsdiag.vscode-react-native
+naumovs.color-highlight
+redhat.vscode-yaml
+sonarsource.sonarlint-vscode
+vscode-icons-team.vscode-icons
+yzhang.markdown-all-in-one

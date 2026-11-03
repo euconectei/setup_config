@@ -1,33 +1,46 @@
-# id          os      tier      group       descricao
-xcode         mac     core      base        Xcode Command Line Tools
-homebrew      mac     core      base        Homebrew
-linuxbrew     linux   core      base        Homebrew (Linux)
-git           both    core      shell       Git
-zsh           both    core      shell       Zsh + zsh-completions
-oh-my-zsh     both    core      shell       Oh My Zsh + plugins
-editor        both    core      shell       $EDITOR + git core.editor
-node          both    core      runtime     Node via fnm + LTS
-pnpm          both    core      runtime     pnpm
-ruby          both    core      runtime     Ruby via rbenv
-python        both    core      runtime     Python (ultima estavel)
-claude        both    core      clis        Claude Code
-opencode      both    core      clis        opencode
-rtk           both    core      clis        rtk
-gh            both    core      cloud       GitHub CLI
-docker        both    core      containers  Docker
-reactNative   both    core      ios         React Native deps
-vscode        both    optional  apps        Visual Studio Code
-fonts         both    optional  apps        Fira Code
-supabase      both    optional  cloud       Supabase CLI
-aws           both    optional  cloud       AWS CLI
-firebase      both    optional  cloud       Firebase CLI
-wrangler      both    optional  cloud       Wrangler (Cloudflare)
-bitbucket     both    optional  cloud       Atlassian CLI
-horusec       both    optional  utils       Horusec
-poetry        both    optional  utils       Poetry
-ripgrep       both    optional  utils       ripgrep
-jq            both    optional  utils       jq
-ghostty       mac     optional  apps        Ghostty terminal
-obsidian      mac     optional  apps        Obsidian
-axe           mac     optional  ios         AXe (iOS Simulator automation)
-mole          mac     optional  utils       Mole (cleanup)
+# id          os      tier      group       deps                  descricao
+# deps: ids separados por virgula ("-" = nenhuma). A ordem das linhas e a ordem de execucao.
+xcode         mac     core      base        -                     Xcode Command Line Tools
+homebrew      both    core      base        xcode                 Homebrew
+git           both    core      shell       homebrew              Git
+zsh           both    core      shell       homebrew              Zsh + zsh-completions
+oh-my-zsh     both    core      shell       git,zsh               Oh My Zsh + zsh-autosuggestions
+vscode        both    optional  apps        homebrew              Visual Studio Code
+vscode-ext    both    optional  apps        vscode                Extensoes do VS Code (config/vscode-extensions.txt)
+editor        both    core      shell       git                   $EDITOR + git core.editor
+node          both    core      runtime     homebrew              Node via fnm + LTS
+pnpm          both    core      runtime     homebrew              pnpm
+ruby          both    core      runtime     homebrew              Ruby via rbenv
+python        both    core      runtime     homebrew              Python (ultima estavel)
+firefox       mac     core      apps        homebrew              Firefox
+claude        both    core      clis        -                     Claude Code
+opencode      both    core      clis        homebrew              opencode
+rtk           both    core      clis        homebrew              rtk
+gh            both    core      cloud       homebrew              GitHub CLI
+docker        both    core      containers  homebrew              Docker via Colima (leve)
+reactNative   both    core      ios         homebrew,node,ruby    React Native deps
+fonts         mac     optional  apps        homebrew              Fira Code
+supabase      both    optional  cloud       homebrew              Supabase CLI
+aws           both    optional  cloud       homebrew              AWS CLI
+firebase      both    optional  cloud       node                  Firebase CLI
+wrangler      both    optional  cloud       node                  Wrangler (Cloudflare)
+bitbucket     both    optional  cloud       homebrew              Atlassian CLI (acli)
+horusec       both    optional  utils       -                     Horusec
+poetry        both    optional  utils       homebrew              Poetry
+ripgrep       both    optional  utils       homebrew              ripgrep
+jq            both    optional  utils       homebrew              jq
+ghostty       mac     optional  apps        homebrew              Ghostty terminal
+obsidian      mac     optional  apps        homebrew              Obsidian
+axe           mac     optional  ios         homebrew              AXe (iOS Simulator automation)
+mole          mac     optional  utils       homebrew              Mole (cleanup)
+xcode-app     mac     optional  ios         xcode                 Xcode completo (App Store)
+bitwarden     mac     optional  apps        homebrew              Bitwarden
+bruno         mac     optional  apps        homebrew              Bruno (cliente de API)
+tableplus     mac     optional  apps        homebrew              TablePlus (cliente de banco)
+pritunl       mac     optional  apps        homebrew              Pritunl (VPN)
+claude-app    mac     optional  apps        homebrew              Claude (desktop)
+whatsapp      mac     optional  apps        homebrew              WhatsApp
+linearmouse   mac     optional  apps        homebrew              LinearMouse (mouse, substitui Logi Options+)
+unarchiver    mac     optional  utils       homebrew              The Unarchiver
+amphetamine   mac     optional  utils       homebrew              Amphetamine (App Store)
+trabalho      mac     optional  apps        docker,ghostty,pritunl,whatsapp  Atalho "Começar a trabalhar" (VPN, Colima, Ghostty, WhatsApp, Teams, Outlook)

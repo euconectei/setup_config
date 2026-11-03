@@ -1,5 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
 
-[[ "$OS" == mac ]] || { warn "mole e so macOS"; exit 0; }
-if is_installed mole; then info "mole ja instalado"; else step "Instalando mole"; brew install mole; fi
+check()   { brew_has mole; }
+install() { brew_install mole; }

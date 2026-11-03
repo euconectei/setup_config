@@ -1,0 +1,415 @@
+#!/bin/bash
+# setup - instalador idempotente e autocorretivo do ambiente de desenvolvimento.
+# Compativel com o bash 3.2 do macOS.
+
+set -uo pipefail   # sem -e: falhas sao isoladas por ferramenta
+
+_self="${BASH_SOURCE[0]}"
+while [[ -L "$_self" ]]; do
+  _dir="$(cd "$(dirname "$_self")" && pwd)"; _self="$(readlink "$_self")"
+  [[ "$_self" != /* ]] && _self="$_dir/$_self"
+done
+SETUP_HOME="$(cd "$(dirname "$_self")/.." && pwd)"
+export SETUP_HOME
+source "$SETUP_HOME/lib/common.sh"
+
+MANIFEST="$SETUP_HOME/setup.tsv"
+PARTIALS_DIR="$SETUP_HOME/partials"
+DESIRED_FILE="$SETUP_STATE/desired"
+FAILED_FILE="$SETUP_STATE/failed"
+LOCK_DIR="$SETUP_STATE/lock"
+LOG_DIR="$SETUP_STATE/logs"
+
+usage() {
+  cat <<'EOF'
+Uso: setup [comando] [opcoes]
+
+Comandos:
+  (nenhum)              verifica e instala/repara o que falta (core + o que voce ja escolheu)
+  update                atualiza o proprio setup (git pull)
+  doctor                diagnostica e corrige problemas
+  doctor --check        apenas diagnostica, sem alterar nada
+
+Opcoes de selecao:
+  --select, -i          menu interativo (fzf) para escolher ferramentas
+  --core                somente o essencial
+  --full                core + opcional
+  --group <grupo>       um grupo (base|shell|runtime|clis|cloud|ios|containers|apps|utils)
+  --only <a,b,c>        somente as ferramentas listadas (+ dependencias)
+  --skip <a,b,c>        exclui ferramentas da selecao (ex.: --full --skip horusec)
+  --retry-failed        tenta novamente apenas o que falhou na ultima execucao
+  --dry-run             mostra o que seria executado, sem instalar
+  -h, --help            esta ajuda
+
+Estado e logs: ~/.local/state/setup_config/
+EOF
+}
+
+# ---------------- argumentos ----------------
+CMD=run
+MODE=""
+SEL_GROUPS=()     # (GROUPS e variavel reservada do bash: atribuicoes eram ignoradas)
+ONLY=()
+SKIP=""
+DRY_RUN=0
+CHECK_ONLY=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    update)          CMD=update ;;
+    doctor)          CMD=doctor ;;
+    --check)         CHECK_ONLY=1 ;;
+    --select|-i)     MODE=interactive ;;
+    --core)          MODE=core ;;
+    --full)          MODE=full ;;
+    --group)         MODE=group; SEL_GROUPS+=("${2:?--group exige um nome}"); shift ;;
+    --only)          MODE=only; IFS=',' read -r -a _o <<< "${2:?--only exige uma lista}"; ONLY+=("${_o[@]}"); shift ;;
+    --skip)          SKIP="$SKIP ${2:?--skip exige uma lista}"; SKIP="${SKIP//,/ }"; shift ;;
+    --retry-failed)  MODE=retry ;;
+    --dry-run)       DRY_RUN=1 ;;
+    -h|--help|help)  usage; exit 0 ;;
+    *) err "Opcao desconhecida: $1"; usage; exit 1 ;;
+  esac
+  shift
+done
+
+# ---------------- manifesto ----------------
+IDS=(); OSES=(); TIERS=(); GRPS=(); DEPS=(); DESCS=()
+while read -r id os tier grp deps desc; do
+  [[ -z "${id:-}" || "$id" == \#* ]] && continue
+  IDS+=("$id"); OSES+=("$os"); TIERS+=("$tier"); GRPS+=("$grp")
+  DEPS+=("$( [[ "$deps" == - ]] && echo "" || echo "${deps//,/ }")"); DESCS+=("$desc")
+done < "$MANIFEST"
+
+idx_of() { local i; for i in "${!IDS[@]}"; do [[ "${IDS[$i]}" == "$1" ]] && { echo "$i"; return 0; }; done; return 1; }
+applies() { local o="${OSES[$1]}"; [[ "$o" == both || "$o" == "$OS" ]]; }
+in_list() { case " $2 " in *" $1 "*) return 0 ;; esac; return 1; }
+
+read_list() { [[ -f "$1" ]] && tr '\n' ' ' < "$1" || true; }
+write_list() { mkdir -p "$SETUP_STATE"; local f="$1"; shift; printf '%s\n' "$@" | awk 'NF && !seen[$0]++' > "$f"; }
+
+# ---------------- dependencias ----------------
+WANT=""
+add_with_deps() {
+  local id="$1" i d
+  in_list "$id" "$WANT" && return 0
+  in_list "$id" "$SKIP" && return 0
+  if ! i="$(idx_of "$id")"; then warn "ferramenta desconhecida: $id"; return 0; fi
+  applies "$i" || return 0
+  for d in ${DEPS[$i]}; do add_with_deps "$d"; done
+  WANT="$WANT $id"
+}
+# devolve a selecao na ordem do manifesto (que respeita as dependencias)
+ordered() { local i; for i in "${!IDS[@]}"; do in_list "${IDS[$i]}" "$WANT" && echo "${IDS[$i]}"; done; }
+
+core_ids() { local i; for i in "${!IDS[@]}"; do applies "$i" && [[ "${TIERS[$i]}" == core ]] && echo "${IDS[$i]}"; done; }
+
+# ---------------- menu ----------------
+menu_lines() {
+  local i tag
+  # atalhos no topo: no fzf, Enter sem TAB escolhe a linha sob o cursor (que comeca em "core")
+  printf '%s %-12s %s\n' "[ >> ]" core "Instalar o essencial (recomendado)"
+  printf '%s %-12s %s\n' "[ >> ]" full "Instalar tudo (core + opcional)"
+  for i in "${!IDS[@]}"; do
+    applies "$i" || continue
+    tag=$([[ "${TIERS[$i]}" == core ]] && echo "[core]" || echo "[opc ]")
+    printf '%s %-12s %s\n' "$tag" "${IDS[$i]}" "${DESCS[$i]}"
+  done
+}
+
+choose_interactive() {
+  local fzf="${SETUP_FZF:-fzf}" chosen
+  if [[ -z "${SETUP_FZF:-}" ]] && ! has fzf && has brew; then
+    info "instalando fzf para o menu interativo"
+    brew install fzf >/dev/null 2>&1 || true
+    hash -r
+  fi
+  if [[ -n "${SETUP_FZF:-}" ]] || has fzf; then
+    local lines; lines="$(menu_lines)"
+    chosen="$($fzf --multi --reverse <<< "$lines" \
+      --bind "ctrl-a:select-all,ctrl-d:deselect-all" \
+      --header "Enter = instala a destacada | TAB = marcar/desmarcar | Ctrl-A = marcar tudo | Ctrl-D = limpar | Esc = sair" \
+      --prompt "Selecione > ")" || { info "cancelado."; exit 0; }
+  else
+    # fallback sem fzf
+    local lines n=0 l
+    lines="$(menu_lines)"
+    while IFS= read -r l; do n=$((n + 1)); printf '%3d) %s\n' "$n" "$l"; done <<< "$lines"
+    printf 'Numeros separados por espaco (Enter = core): '
+    local nums; read -r nums < /dev/tty || nums=""
+    chosen=""
+    for n in $nums; do chosen="$chosen"$'\n'"$(sed -n "${n}p" <<< "$lines")"; done
+  fi
+  # remove a tag e pega o id (antes extraia a descricao, e nada era instalado)
+  ONLY=()
+  local id
+  for id in $(sed -E 's/^\[[^]]*\][[:space:]]*//' <<< "$chosen" | awk 'NF {print $1}'); do ONLY+=("$id"); done
+  if [[ ${#ONLY[@]} -eq 0 ]]; then MODE=core; return; fi
+  # expande os atalhos core/full, mantendo os demais itens marcados.
+  # "full" so vale sozinho: com itens marcados individualmente (ex.: Ctrl-A e depois
+  # desmarcar algo), vale a lista marcada.
+  local expanded=() i individual=0
+  for id in "${ONLY[@]}"; do [[ "$id" != core && "$id" != full ]] && individual=1; done
+  for id in "${ONLY[@]}"; do
+    case "$id" in
+      full) [[ $individual == 0 ]] && { MODE=full; return; } ;;
+      core) for i in $(core_ids); do expanded+=("$i"); done ;;
+      *)    expanded+=("$id") ;;
+    esac
+  done
+  ONLY=("${expanded[@]}"); MODE=only
+}
+
+# ---------------- selecao ----------------
+build_selection() {
+  WANT=""
+  local i id g
+  case "$MODE" in
+    core)    for id in $(core_ids); do add_with_deps "$id"; done ;;
+    full)    for i in "${!IDS[@]}"; do add_with_deps "${IDS[$i]}"; done ;;
+    group)   for i in "${!IDS[@]}"; do for g in "${SEL_GROUPS[@]}"; do [[ "${GRPS[$i]}" == "$g" ]] && add_with_deps "${IDS[$i]}"; done; done ;;
+    only)    for id in "${ONLY[@]}"; do add_with_deps "$id"; done ;;
+    retry)   for id in $(read_list "$FAILED_FILE"); do add_with_deps "$id"; done ;;
+    desired) for id in $(core_ids) $(read_list "$DESIRED_FILE"); do add_with_deps "$id"; done ;;
+  esac
+}
+
+# ---------------- lock / log / sinais ----------------
+acquire_lock() {
+  mkdir -p "$SETUP_STATE"
+  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    local pid; pid="$(cat "$LOCK_DIR/pid" 2>/dev/null || echo)"
+    if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+      err "outra execucao do setup esta em andamento (pid $pid)"; exit 1
+    fi
+    warn "removendo lock antigo"
+    rm -rf "$LOCK_DIR"; mkdir "$LOCK_DIR"
+  fi
+  echo $$ > "$LOCK_DIR/pid"
+}
+release_lock() { [[ "$(cat "$LOCK_DIR/pid" 2>/dev/null)" == "$$" ]] && rm -rf "$LOCK_DIR"; return 0; }
+
+start_log() {
+  mkdir -p "$LOG_DIR"
+  LOG_FILE="$LOG_DIR/setup-$(date +%Y%m%d-%H%M%S).log"
+  ls -1t "$LOG_DIR"/setup-*.log 2>/dev/null | tail -n +20 | while read -r f; do rm -f "$f"; done
+  exec > >(tee -a "$LOG_FILE") 2>&1
+}
+
+INTERRUPTED=0
+on_interrupt() { INTERRUPTED=1; echo; warn "interrompido pelo usuario"; }
+
+# ---------------- integracao com o shell ----------------
+LEGACY_LINES=(
+  'eval "$(fnm env --use-on-cd)"'
+  'eval "$(rbenv init - zsh)"'
+  "export EDITOR='nano'"
+  "export EDITOR='code --wait'"
+  'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
+  'export PATH=$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools'
+  "export ANDROID_HOME=$HOME/Library/Android/sdk"
+)
+init_block() { printf 'export SETUP_HOME="%s"\n[[ -f "$SETUP_HOME/shell/init.zsh" ]] && source "$SETUP_HOME/shell/init.zsh"' "$SETUP_HOME"; }
+
+legacy_present() {
+  local l; for l in "${LEGACY_LINES[@]}"; do grep -qxF "$l" "$ZSHRC" 2>/dev/null && return 0; done; return 1
+}
+
+shell_ok() {
+  grep -qF "# >>> setup_config:init >>>" "$ZSHRC" 2>/dev/null \
+    && grep -qF "export SETUP_HOME=\"$SETUP_HOME\"" "$ZSHRC" && ! legacy_present
+}
+
+ensure_shell() {
+  zshrc_block init "$(init_block)" top
+  if legacy_present; then
+    backup_file "$ZSHRC"
+    local tmp l; tmp="$(mktemp)"; cp "$ZSHRC" "$tmp"
+    for l in "${LEGACY_LINES[@]}"; do
+      awk -v l="$l" '$0 != l' "$tmp" > "$tmp.n" && mv "$tmp.n" "$tmp"
+    done
+    cat "$tmp" > "$ZSHRC"; rm -f "$tmp"
+    info "linhas antigas removidas do .zshrc (agora centralizadas em shell/init.zsh)"
+  fi
+}
+
+# ---------------- atualizacao ----------------
+is_git_checkout() { git -C "$SETUP_HOME" rev-parse --is-inside-work-tree >/dev/null 2>&1; }
+
+check_updates() {
+  is_git_checkout || return 0
+  local stamp="$SETUP_STATE/update_check.stamp"
+  [[ -f "$stamp" ]] && [[ -z "$(find "$stamp" -mmin +1440 2>/dev/null)" ]] && return 0
+  touch "$stamp"
+  GIT_TERMINAL_PROMPT=0 git -C "$SETUP_HOME" fetch --quiet 2>/dev/null || return 0
+  local behind; behind="$(git -C "$SETUP_HOME" rev-list --count 'HEAD..@{u}' 2>/dev/null || echo 0)"
+  [[ "$behind" -gt 0 ]] && warn "ha $behind atualizacao(oes) do setup disponivel(is): rode 'setup update'"
+  return 0
+}
+
+cmd_update() {
+  is_git_checkout || { err "$SETUP_HOME nao e um repositorio git"; exit 1; }
+  if [[ -n "$(git -C "$SETUP_HOME" status --porcelain)" ]]; then
+    err "ha alteracoes locais em $SETUP_HOME; faca commit/stash antes de atualizar"; exit 1
+  fi
+  step "Atualizando $SETUP_HOME"
+  retry git -C "$SETUP_HOME" pull --ff-only || exit 1
+  touch "$SETUP_STATE/update_check.stamp" 2>/dev/null || true
+  ensure_shell
+  info "versao: $(git -C "$SETUP_HOME" log -1 --format='%h %s')"
+}
+
+# ---------------- execucao ----------------
+# codigos: 0 instalado/reparado | 10 ja ok | 11 ausente (check-only) | 3 verificacao falhou | outro = falha
+run_tool() {
+  local id="$1" script="$PARTIALS_DIR/_$1.sh"
+  [[ -f "$script" ]] || { err "partial ausente: $script"; return 1; }
+  (
+    set -Eeuo pipefail
+    # mostra o comando que falhou (antes a falha era silenciosa)
+    trap 'rc=$?; err "comando falhou (codigo $rc) em $(basename "${BASH_SOURCE[0]:-?}"):$LINENO -> $BASH_COMMAND"' ERR
+    load_env
+    source "$script"
+    if check; then exit 10; fi
+    [[ "$CHECK_ONLY" == 1 ]] && exit 11
+    install
+    load_env
+    check || exit 3
+  )
+}
+
+R_OK=(); R_FIXED=(); R_FAIL=(); R_SKIP=(); R_MISSING=()
+
+run_selection() {
+  local list=("$@") id i d rc t0 bad
+  local total=${#list[@]} n=0
+  for id in "${list[@]}"; do
+    n=$((n + 1))
+    [[ "$INTERRUPTED" == 1 ]] && { R_SKIP+=("$id"); continue; }
+    i="$(idx_of "$id")"
+    bad=""
+    for d in ${DEPS[$i]}; do
+      in_list "$d" "${R_FAIL[*]+${R_FAIL[*]}} ${R_SKIP[*]+${R_SKIP[*]}}" && bad="$d"
+    done
+    if [[ -n "$bad" ]]; then
+      warn "[$n/$total] $id: pulado (dependencia '$bad' nao esta ok)"; R_SKIP+=("$id"); continue
+    fi
+
+    step "[$n/$total] $id - ${DESCS[$i]}"
+    t0=$SECONDS
+    run_tool "$id"; rc=$?
+    case $rc in
+      10) info "ok";                                        R_OK+=("$id") ;;
+      11) warn "nao instalado / incompleto";                R_MISSING+=("$id") ;;
+      0)  info "instalado e verificado ($((SECONDS - t0))s)"; R_FIXED+=("$id") ;;
+      3)  err  "instalado, mas a verificacao falhou";       R_FAIL+=("$id") ;;
+      *)  err  "falhou (codigo $rc); continuando";          R_FAIL+=("$id") ;;
+    esac
+  done
+}
+
+report() {
+  echo
+  step "Resumo"
+  [[ ${#R_OK[@]}      -gt 0 ]] && info "ja ok (${#R_OK[@]}): ${R_OK[*]}"
+  [[ ${#R_FIXED[@]}   -gt 0 ]] && info "instalado/reparado (${#R_FIXED[@]}): ${R_FIXED[*]}"
+  [[ ${#R_MISSING[@]} -gt 0 ]] && warn "pendente (${#R_MISSING[@]}): ${R_MISSING[*]}  -> rode 'setup doctor'"
+  [[ ${#R_SKIP[@]}    -gt 0 ]] && warn "pulado (${#R_SKIP[@]}): ${R_SKIP[*]}"
+  [[ ${#R_FAIL[@]}    -gt 0 ]] && err  "falhou (${#R_FAIL[@]}): ${R_FAIL[*]}  -> 'setup --retry-failed'"
+  [[ -n "${LOG_FILE:-}" ]] && info "log: $LOG_FILE"
+  if [[ ${#R_FIXED[@]} -gt 0 ]]; then info "abra um novo terminal (ou 'exec zsh') para carregar as mudancas"; fi
+  return 0
+}
+
+save_state() {
+  [[ "$CHECK_ONLY" == 1 ]] && return 0
+  write_list "$DESIRED_FILE" $(read_list "$DESIRED_FILE") "$@"
+  # falhas anteriores de ferramentas que nao rodaram agora continuam registradas
+  local f=() id
+  for id in $(read_list "$FAILED_FILE"); do in_list "$id" "$*" || f+=("$id"); done
+  f+=(${R_FAIL[@]+"${R_FAIL[@]}"} ${R_SKIP[@]+"${R_SKIP[@]}"})
+  write_list "$FAILED_FILE" ${f[@]+"${f[@]}"}
+}
+
+print_selection() {
+  step "Selecionado ($#):"
+  printf '  %s\n' "$@"
+}
+
+execute() {
+  local sel=("$@")
+  acquire_lock
+  trap release_lock EXIT
+  trap on_interrupt INT TERM
+  start_log
+  step "setup em $SETUP_HOME ($OS/$ARCH)"
+  [[ "$CHECK_ONLY" == 1 ]] || ensure_shell
+  check_updates
+  run_selection "${sel[@]}"
+  save_state "${sel[@]}"
+  report
+  [[ ${#R_FAIL[@]} -eq 0 && ${#R_MISSING[@]} -eq 0 && "$INTERRUPTED" == 0 ]]
+}
+
+# ---------------- doctor ----------------
+cmd_doctor() {
+  step "Diagnostico do ambiente"
+  info "OS: $OS/$ARCH  bash: $BASH_VERSION  SETUP_HOME: $SETUP_HOME"
+  if has brew; then info "brew: $(brew --prefix)"; else warn "brew nao encontrado"; fi
+  local problems=0
+
+  if [[ "$OS" == mac ]]; then
+    local clt
+    clt="$(softwareupdate -l 2>/dev/null | sed -n 's/^[[:space:]]*\* Label: \(Command Line Tools.*\)$/\1/p' | tail -1 || true)"
+    if [[ -n "$clt" ]]; then warn "atualizacao do Xcode CLT disponivel: sudo softwareupdate -i \"$clt\""
+    else info "Xcode CLT: atualizado"; fi
+  fi
+
+  if shell_ok; then info ".zshrc: integracao ok"
+  else warn ".zshrc: integracao ausente/desatualizada ou com linhas antigas"; problems=1; fi
+
+  if [[ -d "$LOCK_DIR" ]] && ! kill -0 "$(cat "$LOCK_DIR/pid" 2>/dev/null || echo 0)" 2>/dev/null; then
+    warn "lock antigo encontrado"; problems=1
+    [[ "$CHECK_ONLY" == 1 ]] || rm -rf "$LOCK_DIR"
+  fi
+
+  if has zsh && grep -qF "setup_config:init" "$ZSHRC" 2>/dev/null; then
+    local seen
+    seen="$(zsh -i -c 'for c in setup brew node; do (( $+commands[$c] )) && print -n "$c "; done' 2>/dev/null </dev/null || true)"
+    info "novo terminal enxerga: ${seen:-nada}"
+  fi
+
+  if [[ "$CHECK_ONLY" == 0 && "$problems" == 1 ]]; then ensure_shell; fi
+
+  MODE=desired; build_selection
+  local sel=(); local id
+  for id in $(ordered); do sel+=("$id"); done
+  execute "${sel[@]}"
+}
+
+# ---------------- main ----------------
+load_env
+
+case "$CMD" in
+  update) cmd_update; exit $? ;;
+  doctor) cmd_doctor; exit $? ;;
+esac
+
+if [[ -z "$MODE" ]]; then
+  if [[ -s "$DESIRED_FILE" ]]; then MODE=desired
+  elif [[ -t 0 ]]; then MODE=interactive
+  else MODE=core; fi
+fi
+[[ "$MODE" == interactive ]] && choose_interactive
+if [[ "$MODE" == retry && ! -s "$FAILED_FILE" ]]; then info "nenhuma falha registrada."; exit 0; fi
+
+build_selection
+SELECTED=()
+for _id in $(ordered); do SELECTED+=("$_id"); done
+
+if [[ ${#SELECTED[@]} -eq 0 ]]; then warn "Nenhuma ferramenta selecionada."; exit 1; fi
+
+print_selection "${SELECTED[@]}"
+if [[ $DRY_RUN -eq 1 ]]; then info "dry-run: nada sera instalado."; exit 0; fi
+
+execute "${SELECTED[@]}"

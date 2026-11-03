@@ -1,3 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
-if is_installed wrangler; then info "wrangler ja instalado"; else step "Instalando wrangler"; npm install -g wrangler; fi
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
+
+check()   { has wrangler; }
+install() { npm_global wrangler wrangler esbuild,workerd; }

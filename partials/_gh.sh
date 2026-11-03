@@ -1,4 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
 
-if is_installed gh; then info "gh ja instalado"; else step "Instalando gh"; brew install gh; fi
+check()   { has gh; }
+install() { brew_install gh; }

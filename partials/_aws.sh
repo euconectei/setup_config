@@ -1,3 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
-if is_installed aws; then info "aws ja instalado"; else step "Instalando awscli"; brew install awscli; fi
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
+
+check()   { has aws; }
+install() { brew_install awscli; }

@@ -1,4 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
 
-if is_installed git; then info "git ja instalado"; else step "Instalando git"; brew install git; fi
+check()   { has git && git --version >/dev/null 2>&1 && has git-lfs; }
+install() { brew_install git git-lfs; git lfs install --skip-repo >/dev/null; }

@@ -1,4 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
 
-if is_installed pnpm; then info "pnpm ja instalado"; else step "Instalando pnpm"; brew install pnpm; fi
+check()   { has pnpm; }
+install() { brew_install pnpm; }

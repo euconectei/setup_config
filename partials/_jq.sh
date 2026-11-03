@@ -1,3 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
-if is_installed jq; then info "jq ja instalado"; else step "Instalando jq"; brew install jq; fi
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
+
+check()   { has jq; }
+install() { brew_install jq; }

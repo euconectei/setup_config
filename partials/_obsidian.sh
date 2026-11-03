@@ -1,5 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
 
-[[ "$OS" == mac ]] || { warn "obsidian e so macOS"; exit 0; }
-if brew list --cask obsidian >/dev/null 2>&1; then info "obsidian ja instalado"; else step "Instalando obsidian"; brew install --cask obsidian; fi
+check()   { brew_has_cask obsidian || [[ -d /Applications/Obsidian.app ]]; }
+install() { brew_cask obsidian; }

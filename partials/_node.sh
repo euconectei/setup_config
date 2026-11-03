@@ -1,10 +1,19 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
 
-if is_installed fnm; then info "fnm ja instalado"; else step "Instalando fnm"; brew install fnm; fi
-write_zshrc 'eval "$(fnm env --use-on-cd)"'
-eval "$(fnm env --use-on-cd)"
-step "Instalando Node LTS"
-fnm install --lts
-fnm default lts
-node -v
+check() {
+  has fnm && has node && node -v >/dev/null 2>&1 && fnm list 2>/dev/null | grep -q default
+}
+
+install() {
+  brew_install fnm
+  load_env
+  if ! fnm list 2>/dev/null | grep -q lts-latest; then
+    step "Instalando Node LTS"
+    retry fnm install --lts
+  fi
+  fnm default lts-latest
+  load_env
+  info "node $(node -v)"
+}

@@ -1,5 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
 
-[[ "$OS" == mac ]] || { warn "ghostty e so macOS"; exit 0; }
-if brew list --cask ghostty >/dev/null 2>&1; then info "ghostty ja instalado"; else step "Instalando ghostty"; brew install --cask ghostty; fi
+check()   { brew_has_cask ghostty || [[ -d /Applications/Ghostty.app ]]; }
+install() { brew_cask ghostty; }

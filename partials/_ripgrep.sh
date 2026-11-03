@@ -1,3 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
-if is_installed rg; then info "ripgrep ja instalado"; else step "Instalando ripgrep"; brew install ripgrep; fi
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
+
+check()   { has rg; }
+install() { brew_install ripgrep; }

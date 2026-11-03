@@ -1,3 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
-if is_installed poetry; then info "poetry ja instalado"; else step "Instalando poetry"; brew install poetry; fi
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
+
+check()   { has poetry; }
+install() { brew_install poetry; }

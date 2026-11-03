@@ -1,10 +1,7 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
 
-if brew list --cask font-fira-code >/dev/null 2>&1; then
-  info "Fira Code ja instalada"
-else
-  step "Instalando Fira Code"
-  brew tap homebrew/cask-fonts
-  brew install --cask font-fira-code
-fi
+# homebrew/cask-fonts foi descontinuado: as fontes agora estao no cask principal
+check()   { brew_has_cask font-fira-code || ls "$HOME"/Library/Fonts/FiraCode* >/dev/null 2>&1; }
+install() { brew_cask font-fira-code; }

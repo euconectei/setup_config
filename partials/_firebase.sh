@@ -1,3 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
-if is_installed firebase; then info "firebase ja instalado"; else step "Instalando firebase-tools"; npm install -g firebase-tools; fi
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
+
+check()   { has firebase; }
+install() { npm_global firebase-tools firebase protobufjs,re2; }

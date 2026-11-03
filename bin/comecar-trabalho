@@ -1,0 +1,57 @@
+#!/bin/bash
+# Comecar a trabalhar: VPN, Docker (Colima), Ghostty, WhatsApp, Teams e Outlook.
+# Usado pelo app "~/Applications/Começar a trabalhar.app" (gerado por: setup --only trabalho).
+#
+# Opcional: ~/.config/setup_config/trabalho.conf
+#   PRITUNL_PROFILE="<id>"   # conecta esse perfil automaticamente (ids: pritunl-client list)
+#   TEAMS_URL / OUTLOOK_URL  # para trocar os enderecos padrao
+
+set -u
+
+# apps abertos pelo Finder/Dock recebem um PATH minimo
+for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do [[ -x "$b" ]] && { eval "$("$b" shellenv bash)"; break; }; done
+export PATH="$HOME/.local/bin:$PATH"
+
+CONF="$HOME/.config/setup_config/trabalho.conf"
+PRITUNL_PROFILE=""
+TEAMS_URL="https://teams.microsoft.com"
+OUTLOOK_URL="https://outlook.office.com/mail/"
+[[ -f "$CONF" ]] && source "$CONF"
+
+LOG="${XDG_STATE_HOME:-$HOME/.local/state}/setup_config/comecar-trabalho.log"
+mkdir -p "$(dirname "$LOG")"
+exec >>"$LOG" 2>&1
+echo "=== $(date '+%F %T')"
+
+notify() { osascript -e "display notification \"$1\" with title \"Começar a trabalhar\"" >/dev/null 2>&1 || true; }
+app_exists() { [[ -d "/Applications/$1.app" || -d "$HOME/Applications/$1.app" ]]; }
+
+# app do Chrome ("Instalar pagina como app") cujo nome contem $1; senao abre a URL no Chrome
+open_web_app() {
+  local name="$1" url="$2" app
+  app="$(find "$HOME/Applications/Chrome Apps.localized" "$HOME/Applications" -maxdepth 1 -iname "*$name*.app" 2>/dev/null | head -1)"
+  if [[ -n "$app" ]]; then open "$app"; else open -a "Google Chrome" "$url"; fi
+}
+
+# 1) VPN primeiro: o resto pode depender dela
+if app_exists Pritunl; then
+  open -g -a Pritunl
+  cli=/Applications/Pritunl.app/Contents/Resources/pritunl-client
+  if [[ -n "$PRITUNL_PROFILE" && -x "$cli" ]]; then
+    "$cli" start "$PRITUNL_PROFILE" && echo "vpn: conectando $PRITUNL_PROFILE" || notify "Falha ao conectar a VPN"
+  fi
+fi
+
+# 2) Docker em segundo plano (leva alguns segundos; nao trava o resto)
+if command -v colima >/dev/null 2>&1 && ! colima status >/dev/null 2>&1; then
+  ( colima start && echo "colima: ok" || notify "Colima não iniciou (veja $LOG)" ) &
+fi
+
+# 3) apps
+app_exists Ghostty  && open -a Ghostty
+app_exists WhatsApp && open -g -a WhatsApp
+open_web_app Teams   "$TEAMS_URL"
+open_web_app Outlook "$OUTLOOK_URL"
+
+wait
+echo "pronto"

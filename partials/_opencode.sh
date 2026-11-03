@@ -1,4 +1,6 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
 
-if is_installed opencode; then info "opencode ja instalado"; else step "Instalando opencode"; brew tap anomalyco/tap && brew install opencode; fi
+check()   { has opencode; }
+install() { brew_install anomalyco/tap/opencode; }

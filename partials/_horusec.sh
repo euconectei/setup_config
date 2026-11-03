@@ -1,3 +1,10 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
-if is_installed horusec; then info "horusec ja instalado"; else step "Instalando horusec"; curl -fsSL https://raw.githubusercontent.com/ZupIT/horusec/main/deployments/scripts/install.sh | bash; fi
+# Contrato: check() -> 0 se instalado e funcional; install() -> instala/repara.
+# Carregado pelo bin/setup num subshell com lib/common.sh e o ambiente ja carregados.
+
+check()   { has horusec; }
+install() {
+  local tmp; tmp="$(mktemp)"
+  retry curl -fsSL https://raw.githubusercontent.com/ZupIT/horusec/main/deployments/scripts/install.sh -o "$tmp"
+  bash "$tmp" latest; rm -f "$tmp"
+}
