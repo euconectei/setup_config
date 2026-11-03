@@ -1,7 +1,18 @@
 # Extensoes do VS Code instaladas pelo "setup --only vscode-ext".
-# Removidas de proposito (ja nativas no VS Code ou pesadas):
-#   auto-rename-tag, highlight-matching-tag, autoimport, path-intellisense, webpack,
-#   codemetrics, import-cost, orta.vscode-jest (fica o jest-runner), copilot-chat, quokka, wallaby
+# Linhas com "!" sao removidas de proposito (ja nativas no VS Code ou pesadas):
+# o setup desinstala se aparecerem. Para o Settings Sync nao reinstala-las, elas
+# tambem ficam em "settingsSync.ignoredExtensions" no settings.json do VS Code.
+!christian-kohler.path-intellisense
+!formulahendry.auto-rename-tag
+!github.copilot-chat
+!jeremyrajan.webpack
+!kisstkondoros.vscode-codemetrics
+!orta.vscode-jest
+!steoates.autoimport
+!vincaslt.highlight-matching-tag
+!wallabyjs.quokka-vscode
+!wallabyjs.wallaby-vscode
+!wix.vscode-import-cost
 # SonarLint: instalado, mas deixe DESABILITADO globalmente e habilite por projeto
 #   (Extensoes > SonarQube for IDE > Desabilitar; no projeto: Habilitar (Workspace)).
 adpyke.codesnap
