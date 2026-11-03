@@ -92,6 +92,7 @@ setup doctor --check     # so diagnostica
 | unarchiver | mac | utils | The Unarchiver |
 | amphetamine | mac | utils | Amphetamine (App Store) |
 | trabalho | mac | apps | Atalho "Começar a trabalhar" (VPN, Colima, Ghostty, WhatsApp, Teams, Outlook) |
+| squad-painel | mac | utils | Painel da squad (envio ao hub via LaunchAgent) |
 
 ## Regras
 
