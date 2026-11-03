@@ -1,0 +1,177 @@
+{
+  "title": "Meu setup",
+  "updated_at": "2026-11-03",
+  "machine": {
+    "os": "macOS",
+    "ram": "8 GB",
+    "note": "Com 8 GB de RAM, leveza é critério de desempate em quase toda escolha."
+  },
+  "principles": [
+    "Instalação idempotente e autocorretiva: rodar de novo só repara o que falta.",
+    "Sempre versões estáveis/LTS dos runtimes.",
+    "Preferir o que já é nativo a instalar mais uma ferramenta.",
+    "Repositório de setup público, sem dados pessoais: configs privadas e segredos ficam fora do git."
+  ],
+  "categories": [
+    {
+      "name": "Ambiente e instalação",
+      "items": [
+        {
+          "tool": "setup_config (instalador próprio)",
+          "alternatives": ["Brewfile", "scripts soltos", "dotfiles manuais"],
+          "why": "Um manifesto único (setup.tsv) define o que entra, as dependências e o que é essencial ou opcional; cada item sabe verificar e reparar a si mesmo."
+        },
+        {
+          "tool": "Homebrew",
+          "alternatives": ["MacPorts", "instaladores .dmg manuais"],
+          "why": "Padrão de fato no macOS, cobre CLIs e apps (casks) e permite automatizar tudo."
+        },
+        {
+          "tool": "Zsh + Oh My Zsh + zsh-autosuggestions",
+          "alternatives": ["Bash", "Fish"],
+          "why": "Zsh é o shell padrão do macOS; toda a configuração fica num único .zshrc."
+        },
+        {
+          "tool": "Ghostty",
+          "alternatives": ["iTerm2", "Terminal.app", "Warp"],
+          "why": "Terminal rápido e nativo, com configuração em arquivo de texto."
+        }
+      ]
+    },
+    {
+      "name": "Runtimes",
+      "items": [
+        {
+          "tool": "fnm (Node)",
+          "alternatives": ["nvm", "Volta"],
+          "why": "Bem mais rápido que o nvm e não deixa a abertura do shell lenta."
+        },
+        {
+          "tool": "rbenv (Ruby)",
+          "alternatives": ["Ruby do sistema", "RVM"],
+          "why": "O Ruby do macOS está obsoleto, e o CocoaPods do React Native já roda bem via rbenv."
+        },
+        {
+          "tool": "Zulu JDK 17",
+          "alternatives": ["JDK mais recente (25)", "JDK embutido no Android Studio"],
+          "why": "É LTS e é o JDK suportado pelo React Native, que não funciona com o JDK 25."
+        },
+        {
+          "tool": "Python (última estável via Homebrew)",
+          "alternatives": ["pyenv", "Python do sistema"],
+          "why": "Uso simples, então a última versão estável basta, sem gerenciador extra."
+        },
+        {
+          "tool": "pnpm",
+          "alternatives": ["npm", "Yarn"],
+          "why": "Instalações mais rápidas e economia de disco por compartilhar pacotes entre projetos."
+        }
+      ]
+    },
+    {
+      "name": "Containers e mobile",
+      "items": [
+        {
+          "tool": "Colima",
+          "alternatives": ["Docker Desktop", "OrbStack"],
+          "why": "Muito mais leve que o Docker Desktop, o que pesa com 8 GB de RAM; a CLI do docker continua igual. Open source e gratuito, sem licença comercial."
+        },
+        {
+          "tool": "Android SDK só por linha de comando",
+          "alternatives": ["Android Studio"],
+          "why": "O sdkmanager instala só o necessário (adb, emulador, NDK) sem a IDE pesada; o código é escrito no VS Code."
+        }
+      ]
+    },
+    {
+      "name": "Editor",
+      "items": [
+        {
+          "tool": "VS Code com lista enxuta de extensões",
+          "alternatives": ["Cursor", "WebStorm"],
+          "why": "Extensões versionadas numa lista; a sincronização do VS Code não reinstala as que foram removidas de propósito."
+        },
+        {
+          "tool": "Recursos nativos do VS Code",
+          "alternatives": ["Auto Rename Tag", "Highlight Matching Tag", "Auto Import", "Path Intellisense"],
+          "why": "O VS Code já faz isso nativamente (linked editing, auto import e completar caminhos do TypeScript)."
+        },
+        {
+          "tool": "Jest Runner",
+          "alternatives": ["vscode-jest", "Wallaby", "Quokka"],
+          "why": "Roda o teste sob o cursor quando eu peço, sem processo rodando o tempo todo em segundo plano."
+        },
+        {
+          "tool": "SonarQube for IDE, ativado só por projeto",
+          "alternatives": ["deixar ativo sempre", "Code Metrics", "Import Cost"],
+          "why": "Análise pesada só onde faz sentido; as extensões de métrica que rodam o tempo todo foram removidas."
+        }
+      ]
+    },
+    {
+      "name": "Segredos e configuração privada",
+      "items": [
+        {
+          "tool": "Bitwarden (app + CLI bw)",
+          "alternatives": ["1Password", "Chaves do iCloud", "arquivo .env no repositório"],
+          "why": "Open source; com a CLI, o instalador busca tokens direto do cofre e nenhum segredo entra no git."
+        },
+        {
+          "tool": "Notas privadas (Obsidian em repositório git privado) para configs da máquina",
+          "alternatives": ["commitar no repositório público", "recriar à mão a cada máquina"],
+          "why": "O repositório do setup é público: IDs, URLs privadas e caminhos locais ficam nas notas privadas, e o instalador copia de lá sem nunca sobrescrever o que já existe."
+        }
+      ]
+    },
+    {
+      "name": "IA no terminal",
+      "items": [
+        {
+          "tool": "Claude Code",
+          "alternatives": ["GitHub Copilot", "Cursor", "Codex CLI"],
+          "why": "Agente que trabalha direto no terminal e no repositório, sem trocar de editor. Uso perfis separados de trabalho e pessoal com statusline própria, e hooks para automatizar o fluxo (como o rtk)."
+        },
+        {
+          "tool": "rtk",
+          "alternatives": ["saída crua dos comandos"],
+          "why": "Proxy de linha de comando que filtra a saída de git, ls, testes etc. antes de chegar no agente, cortando até 90% dos tokens. Entra por um hook, sem mudar como os comandos são escritos."
+        }
+      ]
+    },
+    {
+      "name": "Apps do dia a dia",
+      "items": [
+        {
+          "tool": "Obsidian",
+          "alternatives": ["Notion", "Apple Notes"],
+          "why": "Notas em Markdown local, versionáveis em git."
+        },
+        {
+          "tool": "Bruno",
+          "alternatives": ["Postman", "Insomnia"],
+          "why": "Funciona offline e guarda as coleções como arquivos, que podem ir para o git junto com o projeto."
+        },
+        {
+          "tool": "LinearMouse",
+          "alternatives": ["Logi Options+"],
+          "why": "Substitui o Logi Options+ com bem menos peso."
+        },
+        {
+          "tool": "Mole",
+          "alternatives": ["CleanMyMac"],
+          "why": "Limpeza de caches e lixo pelo terminal, sem app pago."
+        },
+        {
+          "tool": "Amphetamine",
+          "alternatives": ["caffeinate", "Caffeine"],
+          "why": "Mantém o Mac acordado com regras (por app, por tempo) direto na barra de menus."
+        },
+        {
+          "tool": "The Unarchiver",
+          "alternatives": ["Utilitário de Compactação do macOS", "Keka"],
+          "why": "Abre praticamente qualquer formato compactado."
+        }
+      ]
+    }
+  ]
+}
