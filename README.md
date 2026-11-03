@@ -91,6 +91,7 @@ setup doctor --check     # so diagnostica
 | linearmouse | mac | apps | LinearMouse (mouse, substitui Logi Options+) |
 | unarchiver | mac | utils | The Unarchiver |
 | amphetamine | mac | utils | Amphetamine (App Store) |
+| private-conf | both | utils | Configs privadas (*.conf) copiadas de uma pasta fora do git |
 | trabalho | mac | apps | Atalho "Começar a trabalhar" (VPN, Colima, Ghostty, WhatsApp, Teams, Outlook) |
 | squad-painel | mac | utils | Painel da squad (envio ao hub via LaunchAgent) |
 

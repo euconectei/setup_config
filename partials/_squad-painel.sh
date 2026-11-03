@@ -3,10 +3,16 @@
 # Squad panel: local server + push to the Hermes hub, kept alive by a LaunchAgent.
 # Spec: private notes (squad panel).
 #
-# Pre-requisite (not versioned): the machine token in ~/.config/squad-panel/token
-# Optional: ~/.config/setup_config/squad-painel.conf
-#   SQUAD_PANEL_HOST=127.0.0.1   # 0.0.0.0 to expose the panel on the local network
+# Pre-requisite (not versioned): the machine token in ~/.config/squad-panel/token.
+#   If missing and Bitwarden is unlocked (BW_SESSION set), it is read from the
+#   Bitwarden item $SQUAD_PANEL_BW_ITEM (password field).
+# Required: ~/.config/setup_config/squad-painel.conf (not versioned) with
 #   SQUAD_PANEL_PUSH_URL=https://<host>/api/ingest
+# Optional in the same file:
+#   SQUAD_PANEL_HOST=127.0.0.1   # 0.0.0.0 to expose the panel on the local network
+#   SQUAD_REPO=git@github.com:<owner>/squad.git
+#   SQUAD_DIR=$HOME/<path>/squad
+#   SQUAD_PANEL_BW_ITEM="squad-panel token"
 #   SQUAD_PANEL_INTERVAL=15
 
 LABEL=com.euconectei.squad-painel
@@ -14,15 +20,17 @@ PANEL_DIR="$HOME/.config/squad-panel"
 TOKEN_FILE="$PANEL_DIR/token"
 RUN_SH="$PANEL_DIR/run.sh"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
-SQUAD_DIR="$HOME/Projects/Pessoal/squad"
-SERVER="$SQUAD_DIR/plugins/squad/painel/server.mjs"
 NODE_BIN="$HOME/.local/share/fnm/aliases/default/bin/node"   # stable across node upgrades
 CONF="$HOME/.config/setup_config/squad-painel.conf"
 
 SQUAD_PANEL_HOST=127.0.0.1
-SQUAD_PANEL_PUSH_URL=https://<host>/api/ingest
+SQUAD_PANEL_PUSH_URL=""
 SQUAD_PANEL_INTERVAL=15
+SQUAD_REPO=git@github.com:euconectei/squad.git
+SQUAD_DIR="$HOME/Projects/squad"
+SQUAD_PANEL_BW_ITEM="squad-panel token"
 [[ -f "$CONF" ]] && source "$CONF"
+SERVER="$SQUAD_DIR/plugins/squad/painel/server.mjs"
 
 agent_running() { launchctl print "gui/$(id -u)/$LABEL" 2>/dev/null | grep -q 'state = running'; }
 
@@ -31,18 +39,28 @@ check() {
   [[ -f "$TOKEN_FILE" && -f "$SERVER" && -x "$NODE_BIN" && -f "$PLIST" ]] \
     && grep -qF "$NODE_BIN" "$RUN_SH" 2>/dev/null \
     && grep -qF "SQUAD_PANEL_HOST=$SQUAD_PANEL_HOST" "$RUN_SH" \
+    && [[ -n "$SQUAD_PANEL_PUSH_URL" ]] && grep -qF -- "--push $SQUAD_PANEL_PUSH_URL " "$RUN_SH" \
     && agent_running
 }
 
 install() {
   [[ "$OS" == mac ]] || { warn "squad-painel: so macOS (no WSL use systemd --user)"; return 0; }
+  if [[ -z "$SQUAD_PANEL_PUSH_URL" ]]; then
+    err "SQUAD_PANEL_PUSH_URL ausente: defina em $CONF"
+    return 1
+  fi
+  if [[ ! -s "$TOKEN_FILE" ]] && has bw && [[ -n "${BW_SESSION:-}" ]]; then
+    step "Lendo o token do Bitwarden ($SQUAD_PANEL_BW_ITEM)"
+    mkdir -p "$PANEL_DIR"
+    ( umask 077; bw get password "$SQUAD_PANEL_BW_ITEM" > "$TOKEN_FILE" 2>/dev/null ) || rm -f "$TOKEN_FILE"
+  fi
   if [[ ! -s "$TOKEN_FILE" ]]; then
-    err "token ausente: $TOKEN_FILE (pegue o token desta maquina no SQUAD_PANEL_TOKENS do hub)"
+    err "token ausente: $TOKEN_FILE (salve no Bitwarden como \"$SQUAD_PANEL_BW_ITEM\" e rode com BW_SESSION=\$(bw unlock --raw), ou copie do SQUAD_PANEL_TOKENS do hub)"
     return 1
   fi
   if [[ ! -f "$SERVER" ]]; then
     step "Clonando squad"
-    retry git clone git@github.com:euconectei/squad.git "$SQUAD_DIR"
+    retry git clone "$SQUAD_REPO" "$SQUAD_DIR"
   fi
   [[ -x "$NODE_BIN" ]] || { err "node do fnm nao encontrado (rode: setup --only node)"; return 1; }
 

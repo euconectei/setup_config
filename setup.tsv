@@ -43,5 +43,6 @@ whatsapp      mac     optional  apps        homebrew              WhatsApp
 linearmouse   mac     optional  apps        homebrew              LinearMouse (mouse, substitui Logi Options+)
 unarchiver    mac     optional  utils       homebrew              The Unarchiver
 amphetamine   mac     optional  utils       homebrew              Amphetamine (App Store)
-trabalho      mac     optional  apps        docker,ghostty,pritunl,whatsapp  Atalho "Começar a trabalhar" (VPN, Colima, Ghostty, WhatsApp, Teams, Outlook)
-squad-painel  mac     optional  utils       node,git              Painel da squad (envio ao hub via LaunchAgent)
+private-conf  both    optional  utils       -                     Configs privadas (*.conf) copiadas de uma pasta fora do git
+trabalho      mac     optional  apps        docker,ghostty,pritunl,whatsapp,private-conf  Atalho "Começar a trabalhar" (VPN, Colima, Ghostty, WhatsApp, Teams, Outlook)
+squad-painel  mac     optional  utils       node,git,private-conf         Painel da squad (envio ao hub via LaunchAgent)
