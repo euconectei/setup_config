@@ -2,6 +2,7 @@
 # deps: ids separados por virgula ("-" = nenhuma). A ordem das linhas e a ordem de execucao.
 xcode         mac     core      base        -                     Xcode Command Line Tools
 homebrew      both    core      base        xcode                 Homebrew
+macos         mac     optional  base        -                     Preferencias do macOS (Finder, Dock, teclado, trackpad, capturas)
 git           both    core      shell       homebrew              Git
 zsh           both    core      shell       homebrew              Zsh + zsh-completions
 oh-my-zsh     both    core      shell       git,zsh               Oh My Zsh + zsh-autosuggestions

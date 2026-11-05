@@ -65,6 +65,7 @@ setup doctor --check     # so diagnostica
 
 | id | os | grupo | descricao |
 |----|----|-------|-----------|
+| macos | mac | base | Preferencias do macOS (Finder, Dock, teclado, trackpad, capturas) |
 | vscode | both | apps | Visual Studio Code |
 | vscode-ext | both | apps | Extensoes do VS Code (config/vscode-extensions.txt) |
 | fonts | mac | apps | Fira Code |
