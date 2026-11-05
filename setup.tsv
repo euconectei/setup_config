@@ -29,7 +29,7 @@ horusec       both    optional  utils       -                     Horusec
 poetry        both    optional  utils       homebrew              Poetry
 ripgrep       both    optional  utils       homebrew              ripgrep
 jq            both    optional  utils       homebrew              jq
-ghostty       mac     optional  apps        homebrew              Ghostty terminal
+ghostty       mac     optional  apps        homebrew,fonts        Ghostty terminal
 obsidian      mac     optional  apps        homebrew              Obsidian
 axe           mac     optional  ios         homebrew              AXe (iOS Simulator automation)
 mole          mac     optional  utils       homebrew              Mole (cleanup)
