@@ -1,6 +1,6 @@
 {
   "title": "Meu setup",
-  "updated_at": "2026-11-03",
+  "updated_at": "2026-11-06",
   "machine": {
     "os": "macOS",
     "ram": "8 GB",
@@ -150,6 +150,11 @@
           "tool": "Bruno",
           "alternatives": ["Postman", "Insomnia"],
           "why": "Funciona offline e guarda as coleções como arquivos, que podem ir para o git junto com o projeto."
+        },
+        {
+          "tool": "DBeaver Community",
+          "alternatives": ["TablePlus", "Beekeeper Studio", "DataGrip"],
+          "why": "Open source e sem limites de abas ou janelas (o TablePlus é freemium). Conecta em praticamente qualquer banco. É mais pesado por ser Java, mas só fica aberto quando preciso."
         },
         {
           "tool": "LinearMouse",
