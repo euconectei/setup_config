@@ -45,5 +45,6 @@ linearmouse   mac     optional  apps        homebrew              LinearMouse (m
 unarchiver    mac     optional  utils       homebrew              The Unarchiver
 amphetamine   mac     optional  utils       homebrew              Amphetamine (App Store)
 private-conf  both    optional  utils       -                     Configs privadas (*.conf) copiadas de uma pasta fora do git
+dbeaver-sync  mac     optional  apps        dbeaver,git,private-conf  Sincroniza conexoes e scripts do DBeaver via repos git privados (dbsync)
 trabalho      mac     optional  apps        docker,ghostty,pritunl,whatsapp,private-conf  Atalho "Começar a trabalhar" (VPN, Colima, Ghostty, WhatsApp, Teams, Outlook)
 squad-painel  mac     optional  utils       node,git,private-conf         Painel da squad (envio ao hub via LaunchAgent)

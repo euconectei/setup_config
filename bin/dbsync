@@ -1,0 +1,58 @@
+#!/bin/bash
+# Syncs the DBeaver projects listed in ~/.config/setup_config/dbeaver-sync.conf:
+# commits local changes, rebases on the remote and pushes. Set up by: setup --only dbeaver-sync
+#
+# Usage: dbsync [--force]   (--force runs even with DBeaver open)
+
+set -uo pipefail
+
+SETUP_HOME="${SETUP_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+source "$SETUP_HOME/lib/dbeaver.sh"
+
+force=0
+case "${1:-}" in
+  --force|-f) force=1 ;;
+  "") ;;
+  -h|--help) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  *) echo "opcao desconhecida: $1 (use --force ou --help)" >&2; exit 2 ;;
+esac
+
+if ! dbeaver_load; then
+  echo "sem projetos: rode 'setup --only dbeaver-sync' (falta $DBEAVER_SYNC_CONF)" >&2
+  exit 1
+fi
+# with DBeaver open, it may overwrite pulled connections with the copy it has in memory
+if [[ $force -eq 0 ]] && dbeaver_running; then
+  echo "feche o DBeaver antes de sincronizar (ou use dbsync --force)" >&2
+  exit 1
+fi
+
+host="$(scutil --get LocalHostName 2>/dev/null || hostname -s)"
+rc=0
+while IFS='|' read -r name url dir; do
+  echo "==> $name"
+  if [[ ! -d "$dir/.git" ]]; then
+    echo "   nao clonado em $dir: rode 'setup --only dbeaver-sync'" >&2; rc=1; continue
+  fi
+  if ! dbeaver_protected "$dir"; then
+    echo "   protecao das senhas ausente: rode 'setup --only dbeaver-sync'" >&2; rc=1; continue
+  fi
+  if [[ -d "$dir/.git/rebase-merge" || -d "$dir/.git/rebase-apply" ]]; then
+    echo "   rebase pendente em $dir: resolva com git (git status) e rode de novo" >&2; rc=1; continue
+  fi
+
+  git -C "$dir" add -A
+  if ! git -C "$dir" diff --cached --quiet; then
+    git -C "$dir" commit -q -m "sync from $host" || { echo "   commit falhou" >&2; rc=1; continue; }
+    echo "   alteracoes locais registradas"
+  fi
+  if ! git -C "$dir" pull -q --rebase; then
+    echo "   conflito ao trazer o remoto: resolva em $dir (git status) e rode de novo" >&2; rc=1; continue
+  fi
+  if ! git -C "$dir" push -q 2>/dev/null && ! git -C "$dir" push -q -u origin HEAD; then
+    echo "   push falhou" >&2; rc=1; continue
+  fi
+  echo "   sincronizado"
+  dbeaver_registered "$name" || echo "   ainda nao importado no DBeaver: File > Import > General > Existing Projects into Workspace > $dir"
+done < <(dbeaver_projects)
+exit $rc

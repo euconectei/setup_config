@@ -34,6 +34,17 @@ while read -r id _; do
   fi
 done < setup.tsv
 
+# 2b) manifesto: toda dependencia vem antes do item (a ordem das linhas e a ordem de execucao)
+seen=" "
+while read -r id _ _ _ deps _; do
+  [[ -z "$id" || "$id" == \#* ]] && continue
+  for d in ${deps//,/ }; do
+    [[ "$d" == - || "$seen" == *" $d "* ]] || bad "manifesto: $id depende de $d, que vem depois"
+  done
+  seen+="$id "
+done < setup.tsv
+ok "manifesto: dependencias antes dos itens"
+
 # 3) selecao
 out=$(sel --only node)
 has_id node "$out" && has_id homebrew "$out" && ! has_id ghostty "$out" \
@@ -128,5 +139,36 @@ grep -q 'setup_config:init' "$HOME/.zshrc" && ! grep -qx "export EDITOR='nano'" 
 "$FAKE/bin/setup" --only cc </dev/null >/dev/null 2>&1
 grep -qx aa "$SETUP_STATE/failed" && ok "falhas anteriores preservadas apos execucao parcial" || bad "failed preservado"
 [[ ! -d "$SETUP_STATE/lock" ]] && ok "lock liberado" || bad "lock liberado"
+
+# 6) dbeaver-sync: clona, protege as senhas e sincroniza entre duas "maquinas"
+DB="$TMP/dbeaver"; mkdir -p "$DB"
+git init -q --bare "$DB/remote.git"
+seed="$DB/seed"; git clone -q "$DB/remote.git" "$seed" 2>/dev/null
+mkdir -p "$seed/Scripts"; touch "$seed/Scripts/.gitkeep"
+git -C "$seed" add -A && git -C "$seed" -c user.name=t -c user.email=t@t commit -qm init && git -C "$seed" push -q origin HEAD 2>/dev/null
+dbsetup() {  # $1 = machine name
+  ( export DBEAVER_SYNC_CONF="$DB/$1.conf" DBEAVER_WORKSPACE="$DB/ws-$1" SETUP_HOME="$ROOT"
+    printf 'DBEAVER_PROJECTS=("Teste|%s|%s")\n' "$DB/remote.git" "$DB/$1/teste" > "$DBEAVER_SYNC_CONF"
+    source lib/common.sh; source partials/_dbeaver-sync.sh; install >/dev/null 2>&1; check )
+}
+dbsync_on() { DBEAVER_SYNC_CONF="$DB/$1.conf" DBEAVER_WORKSPACE="$DB/ws-$1" bin/dbsync >>"$DB/log" 2>&1; }
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+dbsetup a && dbsetup b && ok "dbeaver-sync: clona e passa no check" || bad "dbeaver-sync install/check"
+
+A="$DB/a/teste"; B="$DB/b/teste"
+mkdir -p "$A/.dbeaver"; echo '{"x":1}' > "$A/.dbeaver/data-sources.json"; echo segredo > "$A/.dbeaver/credentials-config.json"
+echo 'select 1;' > "$A/Scripts/q.sql"
+dbsync_on a && dbsync_on b && [[ -f "$B/.dbeaver/data-sources.json" && -f "$B/Scripts/q.sql" ]] \
+  && ok "dbsync: conexoes e scripts chegam na outra maquina" || bad "dbsync propagacao"
+[[ ! -f "$B/.dbeaver/credentials-config.json" ]] && ! grep -q credentials <<<"$(git -C "$DB/remote.git" log --all --name-only --format=)" \
+  && ok "dbsync: arquivo de senhas nunca vai para o git" || bad "dbsync vazou senhas"
+git -C "$A" add -f .dbeaver/credentials-config.json && ! git -C "$A" commit -qm leak 2>/dev/null \
+  && ok "dbeaver-sync: hook recusa commit forcado das senhas" || bad "hook pre-commit"
+git -C "$A" reset -q
+echo 'select 2;' > "$B/Scripts/q2.sql"; dbsync_on b
+echo 'select 3;' > "$A/Scripts/q3.sql"; dbsync_on a \
+  && [[ -f "$A/Scripts/q2.sql" ]] && grep -qx Scripts/q3.sql <<<"$(git -C "$DB/remote.git" log --all --format= --name-only)" \
+  && ok "dbsync: alteracoes nas duas maquinas se juntam (rebase)" || { bad "dbsync rebase"; cat "$DB/log"; }
+DBEAVER_SYNC_CONF="$DB/nao-existe.conf" bin/dbsync >/dev/null 2>&1 && bad "dbsync sem conf" || ok "dbsync: falha clara sem conf"
 
 exit $fail

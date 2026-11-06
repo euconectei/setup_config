@@ -93,6 +93,7 @@ setup doctor --check     # so diagnostica
 | unarchiver | mac | utils | The Unarchiver |
 | amphetamine | mac | utils | Amphetamine (App Store) |
 | private-conf | both | utils | Configs privadas (*.conf) copiadas de uma pasta fora do git |
+| dbeaver-sync | mac | apps | Sincroniza conexoes e scripts do DBeaver via repos git privados (dbsync) |
 | trabalho | mac | apps | Atalho "Começar a trabalhar" (VPN, Colima, Ghostty, WhatsApp, Teams, Outlook) |
 | squad-painel | mac | utils | Painel da squad (envio ao hub via LaunchAgent) |
 
