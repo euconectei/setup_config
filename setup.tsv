@@ -37,7 +37,7 @@ mole          mac     optional  utils       homebrew              Mole (cleanup)
 xcode-app     mac     optional  ios         xcode                 Xcode completo (App Store)
 bitwarden     mac     optional  apps        homebrew              Bitwarden
 bruno         mac     optional  apps        homebrew              Bruno (cliente de API)
-tableplus     mac     optional  apps        homebrew              TablePlus (cliente de banco)
+dbeaver       mac     optional  apps        homebrew              DBeaver Community (cliente de banco)
 pritunl       mac     optional  apps        homebrew              Pritunl (VPN)
 claude-app    mac     optional  apps        homebrew              Claude (desktop)
 whatsapp      mac     optional  apps        homebrew              WhatsApp

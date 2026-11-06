@@ -85,7 +85,7 @@ setup doctor --check     # so diagnostica
 | xcode-app | mac | ios | Xcode completo (App Store) |
 | bitwarden | mac | apps | Bitwarden |
 | bruno | mac | apps | Bruno (cliente de API) |
-| tableplus | mac | apps | TablePlus (cliente de banco) |
+| dbeaver | mac | apps | DBeaver Community (cliente de banco) |
 | pritunl | mac | apps | Pritunl (VPN) |
 | claude-app | mac | apps | Claude (desktop) |
 | whatsapp | mac | apps | WhatsApp |
